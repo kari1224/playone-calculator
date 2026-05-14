@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>階梯補流水決策器</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #89f7fe, #66a6ff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .container {
+    width: 90%;
+    max-width: 700px;
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(15px);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+
+  h2 {
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+  }
+
+  label {
+    color: white;
+    font-weight: bold;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+  }
+
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background: #4a6cf7;
+    color: white;
+    font-weight: bold;
+  }
+
+  button:hover {
+    background: #3a57d6;
+  }
+
+  .result {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    white-space: pre-line;
+    color: #111;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <h2>階梯補流水決策器</h2>
+
+  <label>輸入當前流水</label>
+  <input type="number" id="amount" placeholder="例如：158604" />
+
+  <button onclick="calculate()">開始分析</button>
+
+  <div class="result" id="result"></div>
+
+</div>
+
+<script>
+const bonusTable = {
+  5000: 500,
+  10000: 1500,
+  15000: 2300,
+  25000: 4000,
+  45000: 7000,
+  65000: 11000,
+  85000: 15000,
+  100000: 20000,
+  150000: 35000,
+  200000: 50000
+};
+
+function calculate() {
+  const amount = parseInt(document.getElementById("amount").value);
+
+  if (isNaN(amount) || amount <= 0) {
+    document.getElementById("result").innerText = "請輸入正確的流水數字";
+    return;
+  }
+
+  const tiers = Object.keys(bonusTable).map(Number).sort((a,b)=>a-b);
+
+  // 找目前階梯
+  let baseTier = 0;
+  let baseBonus = 0;
+
+  for (const t of tiers) {
+    if (amount >= t) {
+      baseTier = t;
+      baseBonus = bonusTable[t];
+    }
+  }
+
+  let results = [];
+  let best = null;
+
+  for (const t of tiers) {
+    if (t <= amount) continue;
+
+    const gap = t - amount;
+    const cost = gap * 0.3;
+    const income = bonusTable[t];
+    const net = income - baseBonus - cost;
+
+    const item = { t, gap, cost, income, net };
+
+    results.push(item);
+
+    if (!best || net > best.net) {
+      best = item;
+    }
+  }
+
+  let text =
+`當前流水：${amount.toLocaleString()}
+目前階梯：${baseTier.toLocaleString()}
+目前獎金：${baseBonus.toLocaleString()}
+
+----------------------------
+
+各階梯分析：
+
+`;
+
+  for (const r of results) {
+    text +=
+`▶ ${r.t.toLocaleString()}
+缺額：${r.gap.toLocaleString()}
+成本：${r.cost.toLocaleString()}
+獎金：${r.income.toLocaleString()}
+淨收益：${r.net.toLocaleString()} (${r.net >= 0 ? "賺" : "虧"})
+
+`;
+  }
+
+  if (best) {
+    text +=
+`========================
+🔥 最佳選擇：
+補到 ${best.t.toLocaleString()}
+預估淨收益：${best.net.toLocaleString()} (${best.net >= 0 ? "賺" : "虧"})`;
+  }
+
+  document.getElementById("result").innerText = text;
+}
+</script>
+
+</body>
+</html>

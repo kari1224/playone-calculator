@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>階梯補流水分析器 v5（現實決策版）</title>
+<title>階梯補流水分析器 v6</title>
 
 <style>
 body{
@@ -15,7 +15,7 @@ body{
 }
 
 .container{
-  max-width:820px;
+  max-width:860px;
   margin:auto;
   background:rgba(255,255,255,0.12);
   padding:24px;
@@ -41,7 +41,7 @@ button{
 }
 
 .card{
-  margin-top:18px;
+  margin-top:16px;
   padding:16px;
   background:rgba(255,255,255,0.15);
   border-radius:16px;
@@ -50,8 +50,9 @@ button{
 .green{color:#6dff9b;}
 .red{color:#ff7a7a;}
 
-summary{cursor:pointer;font-weight:bold;}
+pre{white-space:pre-wrap;}
 
+summary{cursor:pointer;font-weight:bold;}
 details{margin-top:10px;}
 </style>
 </head>
@@ -60,7 +61,7 @@ details{margin-top:10px;}
 
 <div class="container">
 
-<h1>📊 階梯補流水分析器 v5</h1>
+<h1>📊 階梯補流水分析器 v6（正確算法版）</h1>
 
 <label>目前流水</label>
 <input id="amount" type="number" placeholder="例如 158604" min="0">
@@ -115,8 +116,7 @@ const plans = {
       100000: 12000,
       150000: 18000,
       200000: 24000,
-      300000: 37000,
-      500000: 65000
+      300000: 37000
     }
   },
 
@@ -132,14 +132,13 @@ const plans = {
       100000: 15000,
       150000: 25000,
       200000: 34000,
-      300000: 52000,
-      500000: 88000
+      300000: 52000
     }
   }
 };
 
 /* =========================
-   取得當前階
+   取得階
 ========================= */
 function getCurrent(amount, table){
   const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
@@ -155,72 +154,65 @@ function getCurrent(amount, table){
 }
 
 /* =========================
+   三個獨立引擎
+========================= */
+function runEngines(amount, plan){
+
+  const table = plan.table;
+  const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
+
+  const {tier:curTier, bonus:curBonus} = getCurrent(amount, table);
+
+  let flowBest=null;
+  let bonusBest=null;
+  let mixBest=null;
+
+  for(const k of keys){
+    if(k <= amount) continue;
+
+    const gap = k - amount;
+    const cost = gap * COST_RATE;
+    const revenue = gap * REVENUE_RATE;
+    const bonus = table[k];
+
+    /* 🟦 流水引擎 */
+    const flowNet = revenue - cost;
+
+    /* 🟨 獎金引擎 */
+    const bonusNet = bonus - curBonus - cost;
+
+    /* 🟩 綜合引擎 */
+    const mixNet = (bonus - curBonus) + revenue - cost;
+
+    const item = {k, gap, cost, revenue, bonus};
+
+    if(!flowBest || flowNet > flowBest.net)
+      flowBest = {...item, net:flowNet};
+
+    if(!bonusBest || bonusNet > bonusBest.net)
+      bonusBest = {...item, net:bonusNet};
+
+    if(!mixBest || mixNet > mixBest.net)
+      mixBest = {...item, net:mixNet};
+  }
+
+  return {flowBest, bonusBest, mixBest, curTier, curBonus};
+}
+
+/* =========================
    主計算
 ========================= */
 function calc(){
 
 const amount = Number(document.getElementById("amount").value);
 const plan = plans[document.getElementById("plan").value];
-const table = plan.table;
 
 if(!amount){
   alert("請輸入流水");
   return;
 }
 
-const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
-
-const {tier:curTier, bonus:curBonus} = getCurrent(amount, table);
-
-let candidates = [];
-let theoreticalBest = null;
-
-/* =========================
-   🔥 限制：現實可達範圍
-   👉 不允許跳太遠
-========================= */
-const MAX_GAP = 80000; // 👈 關鍵：避免跳 100萬
-
-for(const k of keys){
-
-  if(k <= amount) continue;
-
-  const gap = k - amount;
-
-  // ❌ 現實限制：太遠不算
-  if(gap > MAX_GAP) continue;
-
-  const cost = gap * COST_RATE;
-  const bonus = table[k];
-  const revenue = gap * REVENUE_RATE;
-
-  const net = (bonus - curBonus) + revenue - cost;
-
-  const roi = net / cost;
-
-  const item = {k, gap, cost, bonus, net, roi};
-
-  candidates.push(item);
-
-  if(!theoreticalBest || net > theoreticalBest.net){
-    theoreticalBest = item;
-  }
-}
-
-/* =========================
-   沒候選
-========================= */
-if(candidates.length === 0){
-  document.getElementById("result").innerHTML =
-    `<div class="card">⚠️ 沒有可合理升階的選項</div>`;
-  return;
-}
-
-/* =========================
-   現實最佳（ROI加權）
-========================= */
-let realisticBest = candidates
-  .sort((a,b)=>b.net - a.net)[0];
+const r = runEngines(amount, plan);
 
 /* =========================
    UI
@@ -228,56 +220,41 @@ let realisticBest = candidates
 document.getElementById("result").innerHTML = `
 
 <div class="card">
-
-<h2>🎯 現實建議方案</h2>
-
-<p>✔ 補到：
-<b>${realisticBest.k.toLocaleString()}</b></p>
-
-<p>預估淨收益：
-<span class="${realisticBest.net>0?'green':'red'}">
-${realisticBest.net.toFixed(0)}
-</span>
-</p>
-
-<p>ROI：
-${(realisticBest.roi*100).toFixed(2)}%
-</p>
-
+<h2>🟩 綜合決策（推薦）</h2>
+<p>補到：<b>${r.mixBest.k.toLocaleString()}</b></p>
+<p>淨收益：
+<span class="${r.mixBest.net>0?'green':'red'}">
+${r.mixBest.net.toFixed(0)}
+</span></p>
 </div>
 
 <div class="card">
+<h3>🟦 流水模式最佳</h3>
+<p>補到：${r.flowBest.k.toLocaleString()}</p>
+<p>淨收益：${r.flowBest.net.toFixed(0)}</p>
+</div>
 
-<h3>🧠 理論最優（僅參考）</h3>
-<p>補到：${theoreticalBest.k.toLocaleString()}</p>
-<p>淨收益：${theoreticalBest.net.toFixed(0)}</p>
-
+<div class="card">
+<h3>🟨 獎金模式最佳</h3>
+<p>補到：${r.bonusBest.k.toLocaleString()}</p>
+<p>淨收益：${r.bonusBest.net.toFixed(0)}</p>
 </div>
 
 <details class="card">
-<summary> 詳細計算</summary>
+<summary>詳細資訊</summary>
 
 <pre>
 目前流水：${amount.toLocaleString()}
-目前階梯：${curTier.toLocaleString()}
-目前獎金：${curBonus.toLocaleString()}
+目前階：${r.curTier.toLocaleString()}
+目前獎金：${r.curBonus.toLocaleString()}
 ----------------------
-現實最佳：
-補到 ${realisticBest.k}
-缺額 ${realisticBest.gap}
-成本 ${realisticBest.cost.toFixed(0)}
-獎金 ${realisticBest.bonus}
-ROI ${(realisticBest.roi*100).toFixed(2)}%
-
-----------------------
-限制條件：
-最大補距離 = ${MAX_GAP.toLocaleString()}
-
+綜合最佳：${r.mixBest.k}
+流水最佳：${r.flowBest.k}
+獎金最佳：${r.bonusBest.k}
 ----------------------
 
-理論最優：
-補到 ${theoreticalBest.k}
-淨收益 ${theoreticalBest.net.toFixed(0)}
+所有算法完全獨立計算
+不互相影響
 </pre>
 
 </details>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>階梯補流水分析器 v4</title>
+<title>階梯補流水分析器 v5（現實決策版）</title>
 
 <style>
 body{
@@ -49,16 +49,10 @@ button{
 
 .green{color:#6dff9b;}
 .red{color:#ff7a7a;}
-.yellow{color:#ffd36d;}
 
-summary{
-  cursor:pointer;
-  font-weight:bold;
-}
+summary{cursor:pointer;font-weight:bold;}
 
-details{
-  margin-top:10px;
-}
+details{margin-top:10px;}
 </style>
 </head>
 
@@ -66,7 +60,7 @@ details{
 
 <div class="container">
 
-<h1>📊 階梯補流水分析器 v4</h1>
+<h1>📊 階梯補流水分析器 v5</h1>
 
 <label>目前流水</label>
 <input id="amount" type="number" placeholder="例如 158604" min="0">
@@ -78,13 +72,6 @@ details{
   <option value="support_plus">扶持計畫（升級）</option>
 </select>
 
-<label>選擇模式</label>
-<select id="viewMode">
-  <option value="decision">🎯 決策模式（推薦）</option>
-  <option value="roi">📊 ROI分析模式</option>
-  <option value="compare">📈 全階比較模式</option>
-</select>
-
 <button onclick="calc()">開始分析</button>
 
 <div id="result"></div>
@@ -94,7 +81,11 @@ details{
 <script>
 
 const COST_RATE = 0.3;
+const REVENUE_RATE = 0.4;
 
+/* =========================
+   計畫
+========================= */
 const plans = {
   star: {
     name: "繁星計畫",
@@ -125,8 +116,7 @@ const plans = {
       150000: 18000,
       200000: 24000,
       300000: 37000,
-      500000: 65000,
-      1000000: 130000
+      500000: 65000
     }
   },
 
@@ -143,15 +133,17 @@ const plans = {
       150000: 25000,
       200000: 34000,
       300000: 52000,
-      500000: 88000,
-      1000000: 180000
+      500000: 88000
     }
   }
 };
 
+/* =========================
+   取得當前階
+========================= */
 function getCurrent(amount, table){
   const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
-  let tier = 0, bonus = 0;
+  let tier=0, bonus=0;
 
   for(const k of keys){
     if(amount >= k){
@@ -162,177 +154,135 @@ function getCurrent(amount, table){
   return {tier, bonus};
 }
 
+/* =========================
+   主計算
+========================= */
 function calc(){
 
 const amount = Number(document.getElementById("amount").value);
-const planKey = document.getElementById("plan").value;
-const viewMode = document.getElementById("viewMode").value;
+const plan = plans[document.getElementById("plan").value];
+const table = plan.table;
 
 if(!amount){
   alert("請輸入流水");
   return;
 }
 
-const plan = plans[planKey];
-const table = plan.table;
-
 const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
 
 const {tier:curTier, bonus:curBonus} = getCurrent(amount, table);
 
-let best = null;
-let allResults = [];
+let candidates = [];
+let theoreticalBest = null;
+
+/* =========================
+   🔥 限制：現實可達範圍
+   👉 不允許跳太遠
+========================= */
+const MAX_GAP = 80000; // 👈 關鍵：避免跳 100萬
 
 for(const k of keys){
 
   if(k <= amount) continue;
 
   const gap = k - amount;
+
+  // ❌ 現實限制：太遠不算
+  if(gap > MAX_GAP) continue;
+
   const cost = gap * COST_RATE;
   const bonus = table[k];
-  const revenue = gap * 0.4;
+  const revenue = gap * REVENUE_RATE;
 
   const net = (bonus - curBonus) + revenue - cost;
 
   const roi = net / cost;
-  const efficiency = net / gap;
 
-  const item = {k, gap, cost, bonus, net, roi, efficiency};
+  const item = {k, gap, cost, bonus, net, roi};
 
-  allResults.push(item);
+  candidates.push(item);
 
-  if(!best || net > best.net){
-    best = item;
+  if(!theoreticalBest || net > theoreticalBest.net){
+    theoreticalBest = item;
   }
 }
 
-if(!best){
+/* =========================
+   沒候選
+========================= */
+if(candidates.length === 0){
   document.getElementById("result").innerHTML =
-    `<div class="card">已達最高階，無需補流水</div>`;
+    `<div class="card">⚠️ 沒有可合理升階的選項</div>`;
   return;
 }
 
-render(best, allResults, plan, amount, curTier, curBonus, viewMode);
-
-}
-
-function render(best, all, plan, amount, curTier, curBonus, mode){
-
-const roi = best.roi;
-const efficiency = best.efficiency;
-
-let html = "";
+/* =========================
+   現實最佳（ROI加權）
+========================= */
+let realisticBest = candidates
+  .sort((a,b)=>b.net - a.net)[0];
 
 /* =========================
-   🎯 決策模式（最簡潔）
+   UI
 ========================= */
-if(mode === "decision"){
-  html = `
-  <div class="card">
-    <h2>✔ 最佳方案</h2>
-    <p>補到：<b>${best.k.toLocaleString()}</b></p>
-    <p>預估淨收益：
-      <span class="${best.net>0?'green':'red'}">
-      ${best.net.toFixed(0)}
-      </span>
-    </p>
-  </div>
-  `;
-}
+document.getElementById("result").innerHTML = `
 
-/* =========================
-   📊 ROI模式（你朋友要的）
-========================= */
-if(mode === "roi"){
-  html = `
-  <div class="card">
-    <h2>📊 ROI分析</h2>
+<div class="card">
 
-    <p>ROI：
-      <span class="${roi>0?'green':'red'}">
-      ${(roi*100).toFixed(2)}%
-      </span>
-    </p>
+<h2>🎯 現實建議方案</h2>
 
-    <p>效率（每1元補流水）：
-      ${efficiency.toFixed(3)}
-    </p>
+<p>✔ 補到：
+<b>${realisticBest.k.toLocaleString()}</b></p>
 
-    <hr>
+<p>預估淨收益：
+<span class="${realisticBest.net>0?'green':'red'}">
+${realisticBest.net.toFixed(0)}
+</span>
+</p>
 
-    <p>最佳補點：${best.k.toLocaleString()}</p>
-    <p>淨收益：${best.net.toFixed(0)}</p>
-  </div>
-  `;
-}
+<p>ROI：
+${(realisticBest.roi*100).toFixed(2)}%
+</p>
 
-/* =========================
-   📈 全比較模式（進階）
-========================= */
-if(mode === "compare"){
+</div>
 
-  const sorted = all.sort((a,b)=>b.net-a.net).slice(0,10);
+<div class="card">
 
-  html = `
-  <div class="card">
-    <h2>📈 階梯排行（Top 10）</h2>
+<h3>🧠 理論最優（僅參考）</h3>
+<p>補到：${theoreticalBest.k.toLocaleString()}</p>
+<p>淨收益：${theoreticalBest.net.toFixed(0)}</p>
 
-    <p>最佳補點：<b>${best.k.toLocaleString()}</b></p>
-    <p>ROI：${(roi*100).toFixed(2)}%</p>
+</div>
 
-    <hr>
-
-    <pre>
-${sorted.map(x =>
-`補到 ${x.k} | 淨賺 ${x.net.toFixed(0)} | ROI ${(x.roi*100).toFixed(1)}%`
-).join("\n")}
-    </pre>
-  </div>
-  `;
-}
-
-/* =========================
-   🔍 詳細計算（永遠可展開）
-========================= */
-
-html += `
 <details class="card">
-<summary>▼ 詳細計算</summary>
+<summary> 詳細計算</summary>
 
 <pre>
 目前流水：${amount.toLocaleString()}
 目前階梯：${curTier.toLocaleString()}
 目前獎金：${curBonus.toLocaleString()}
+----------------------
+現實最佳：
+補到 ${realisticBest.k}
+缺額 ${realisticBest.gap}
+成本 ${realisticBest.cost.toFixed(0)}
+獎金 ${realisticBest.bonus}
+ROI ${(realisticBest.roi*100).toFixed(2)}%
+
+----------------------
+限制條件：
+最大補距離 = ${MAX_GAP.toLocaleString()}
 
 ----------------------
 
-目標階梯：${best.k.toLocaleString()}
-缺額：
-${best.k} - ${amount} = ${best.gap.toLocaleString()}
-補流水成本：
-${best.gap} × ${COST_RATE} = ${best.cost.toFixed(0)}
-獎金差額：
-${best.bonus - curBonus}
-流水收益：
-${(best.gap * 0.4).toFixed(0)}
-
-----------------------
-最終淨收益：
-${best.net.toFixed(0)}
-
-ROI：
-${(best.roi*100).toFixed(2)}%
-效率：
-${best.efficiency.toFixed(3)}
-
-----------------------
-計畫：${plan.name}
+理論最優：
+補到 ${theoreticalBest.k}
+淨收益 ${theoreticalBest.net.toFixed(0)}
 </pre>
 
 </details>
-`;
 
-document.getElementById("result").innerHTML = html;
+`;
 
 }
 

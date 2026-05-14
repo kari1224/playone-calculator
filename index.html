@@ -3,138 +3,61 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PLAYONE 階梯收益分析器</title>
+<title>階梯補流水分析器 v4</title>
 
 <style>
-*{
-  box-sizing:border-box;
-}
-
 body{
   margin:0;
-  padding:20px;
-  font-family:"Microsoft JhengHei",sans-serif;
+  font-family:"Microsoft JhengHei";
   background:linear-gradient(135deg,#1e3c72,#2a5298);
-  min-height:100vh;
   color:white;
+  padding:20px;
 }
 
 .container{
-  max-width:700px;
+  max-width:820px;
   margin:auto;
   background:rgba(255,255,255,0.12);
-  backdrop-filter:blur(12px);
-  border-radius:24px;
   padding:24px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.25);
+  border-radius:20px;
+  backdrop-filter:blur(10px);
 }
 
-h1{
-  text-align:center;
-  margin-bottom:24px;
-  font-size:32px;
-}
+h1{text-align:center;}
 
-.input-group{
-  margin-bottom:18px;
-}
-
-label{
-  display:block;
-  margin-bottom:8px;
-  font-weight:bold;
-  font-size:15px;
-}
-
-input,select{
+input,select,button{
   width:100%;
-  padding:14px;
+  padding:12px;
+  margin-top:10px;
+  border-radius:12px;
   border:none;
-  border-radius:14px;
   font-size:16px;
-  outline:none;
 }
 
 button{
-  width:100%;
-  padding:16px;
-  border:none;
-  border-radius:16px;
   background:#00d26a;
-  color:#111;
-  font-size:18px;
   font-weight:bold;
   cursor:pointer;
-  transition:0.2s;
-}
-
-button:hover{
-  transform:scale(1.02);
 }
 
 .card{
-  margin-top:24px;
-  background:rgba(255,255,255,0.15);
-  border-radius:20px;
-  padding:20px;
-}
-
-.best{
-  text-align:center;
-}
-
-.best-title{
-  font-size:18px;
-  opacity:0.8;
-}
-
-.best-target{
-  font-size:34px;
-  font-weight:bold;
-  margin:10px 0;
-}
-
-.best-profit{
-  font-size:28px;
-  font-weight:bold;
-}
-
-.green{
-  color:#71ff9f;
-}
-
-.red{
-  color:#ff8c8c;
-}
-
-.details{
   margin-top:18px;
+  padding:16px;
+  background:rgba(255,255,255,0.15);
+  border-radius:16px;
 }
 
-details{
-  background:rgba(255,255,255,0.08);
-  padding:14px;
-  border-radius:14px;
-}
+.green{color:#6dff9b;}
+.red{color:#ff7a7a;}
+.yellow{color:#ffd36d;}
 
 summary{
   cursor:pointer;
   font-weight:bold;
-  font-size:16px;
 }
 
-.calc{
-  margin-top:12px;
-  line-height:1.8;
-  white-space:pre-line;
-  font-size:15px;
-}
-
-.footer{
-  margin-top:24px;
-  text-align:center;
-  opacity:0.5;
-  font-size:13px;
+details{
+  margin-top:10px;
 }
 </style>
 </head>
@@ -143,39 +66,36 @@ summary{
 
 <div class="container">
 
-<h1>✨ 階梯收益分析器</h1>
+<h1>📊 階梯補流水分析器 v4</h1>
 
-<div class="input-group">
+<label>目前流水</label>
+<input id="amount" type="number" placeholder="例如 158604" min="0">
+
 <label>選擇計畫</label>
-
 <select id="plan">
   <option value="star">繁星計畫</option>
-  <option value="support_normal">扶持計畫（普通版）</option>
-  <option value="support_plus">扶持計畫（升級版）</option>
+  <option value="support_normal">扶持計畫（普通）</option>
+  <option value="support_plus">扶持計畫（升級）</option>
 </select>
-</div>
 
-<div class="input-group">
-<label>輸入目前流水</label>
-<input type="number" id="amount" placeholder="例如：21420">
-</div>
+<label>選擇模式</label>
+<select id="viewMode">
+  <option value="decision">🎯 決策模式（推薦）</option>
+  <option value="roi">📊 ROI分析模式</option>
+  <option value="compare">📈 全階比較模式</option>
+</select>
 
-<button onclick="analyze()">開始分析</button>
+<button onclick="calc()">開始分析</button>
 
-<div id="output"></div>
-
-<div class="footer">
-歌璃製作｜love650324
-</div>
+<div id="result"></div>
 
 </div>
 
 <script>
 
-const COST_RATE = 0.4;
+const COST_RATE = 0.3;
 
 const plans = {
-
   star: {
     name: "繁星計畫",
     table: {
@@ -193,7 +113,7 @@ const plans = {
   },
 
   support_normal: {
-    name: "扶持計畫（普通版）",
+    name: "扶持計畫（普通）",
     table: {
       10000: 1000,
       15000: 1500,
@@ -211,7 +131,7 @@ const plans = {
   },
 
   support_plus: {
-    name: "扶持計畫（升級版）",
+    name: "扶持計畫（升級）",
     table: {
       10000: 1000,
       15000: 1500,
@@ -227,166 +147,193 @@ const plans = {
       1000000: 180000
     }
   }
-
 };
 
-function analyze(){
+function getCurrent(amount, table){
+  const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
+  let tier = 0, bonus = 0;
 
-  const amount = parseInt(document.getElementById("amount").value);
-  const planKey = document.getElementById("plan").value;
-
-  if(isNaN(amount) || amount <= 0){
-    alert("請輸入正確流水");
-    return;
-  }
-
-  const plan = plans[planKey];
-  const table = plan.table;
-
-  const tiers = Object.keys(table)
-    .map(Number)
-    .sort((a,b)=>a-b);
-
-  let currentTier = 0;
-  let currentBonus = 0;
-
-  // 找目前所在階梯
-  for(const t of tiers){
-    if(amount >= t){
-      currentTier = t;
-      currentBonus = table[t];
+  for(const k of keys){
+    if(amount >= k){
+      tier = k;
+      bonus = table[k];
     }
   }
-
-  let best = null;
-
-  // 計算所有可跳階方案
-  for(const t of tiers){
-
-    if(t <= amount) continue;
-
-    const gap = t - amount;
-
-    // 補流水成本
-    const cost = gap * COST_RATE;
-
-    // 目標獎金
-    const targetBonus = table[t];
-
-    // 實際增加收益
-    const profitDiff = targetBonus - currentBonus;
-
-    // 真正淨收益
-    const net = profitDiff - cost;
-
-    if(!best || net > best.net){
-
-      best = {
-        target:t,
-        gap,
-        cost,
-        targetBonus,
-        profitDiff,
-        net
-      };
-
-    }
-
-  }
-
-  if(!best){
-    document.getElementById("output").innerHTML = `
-      <div class="card">
-        已達最高階梯
-      </div>
-    `;
-    return;
-  }
-
-  // 是否值得補
-  const shouldFill = best.net > 0;
-
-  document.getElementById("output").innerHTML = `
-
-  <div class="card best">
-
-    <div class="best-title">
-      ${plan.name}｜分析結果
-    </div>
-
-    <div class="best-target">
-      ${
-        shouldFill
-        ? `建議補到 ${best.target.toLocaleString()}`
-        : `不建議補`
-      }
-    </div>
-
-    <div class="best-profit ${shouldFill ? "green" : "red"}">
-      ${
-        shouldFill
-        ? `預估淨賺 +${Math.round(best.net).toLocaleString()}`
-        : `預估虧損 ${Math.abs(Math.round(best.net)).toLocaleString()}`
-      }
-    </div>
-
-  </div>
-
-  <div class="details">
-
-    <details>
-
-      <summary>查看詳細計算</summary>
-
-      <div class="calc">
-目前流水：
-${amount.toLocaleString()}
-━━━━━━━━━━
-目前階梯：
-${currentTier.toLocaleString()}
-目前獎金：
-${currentBonus.toLocaleString()}
-━━━━━━━━━━
-目標階梯：
-${best.target.toLocaleString()}
-目標獎金：
-${best.targetBonus.toLocaleString()}
-━━━━━━━━━━
-缺額：
-${best.target.toLocaleString()}
-- ${amount.toLocaleString()}
-= ${best.gap.toLocaleString()}
-━━━━━━━━━━
-補流水成本：
-${best.gap.toLocaleString()}
-× ${COST_RATE}
-= ${Math.round(best.cost).toLocaleString()}
-━━━━━━━━━━
-增加收益：
-${best.targetBonus.toLocaleString()}
-- ${currentBonus.toLocaleString()}
-= ${best.profitDiff.toLocaleString()}
-━━━━━━━━━━
-最終淨收益：
-${best.profitDiff.toLocaleString()}
-- ${Math.round(best.cost).toLocaleString()}
-= ${Math.round(best.net).toLocaleString()}
-
-━━━━━━━━━━
-結論：
-${
-  shouldFill
-  ? `因為淨收益為正值，所以建議補流水。`
-  : `因為淨收益為負值，所以不建議補流水。`
+  return {tier, bonus};
 }
 
-      </div>
+function calc(){
 
-    </details>
+const amount = Number(document.getElementById("amount").value);
+const planKey = document.getElementById("plan").value;
+const viewMode = document.getElementById("viewMode").value;
 
+if(!amount){
+  alert("請輸入流水");
+  return;
+}
+
+const plan = plans[planKey];
+const table = plan.table;
+
+const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
+
+const {tier:curTier, bonus:curBonus} = getCurrent(amount, table);
+
+let best = null;
+let allResults = [];
+
+for(const k of keys){
+
+  if(k <= amount) continue;
+
+  const gap = k - amount;
+  const cost = gap * COST_RATE;
+  const bonus = table[k];
+  const revenue = gap * 0.4;
+
+  const net = (bonus - curBonus) + revenue - cost;
+
+  const roi = net / cost;
+  const efficiency = net / gap;
+
+  const item = {k, gap, cost, bonus, net, roi, efficiency};
+
+  allResults.push(item);
+
+  if(!best || net > best.net){
+    best = item;
+  }
+}
+
+if(!best){
+  document.getElementById("result").innerHTML =
+    `<div class="card">已達最高階，無需補流水</div>`;
+  return;
+}
+
+render(best, allResults, plan, amount, curTier, curBonus, viewMode);
+
+}
+
+function render(best, all, plan, amount, curTier, curBonus, mode){
+
+const roi = best.roi;
+const efficiency = best.efficiency;
+
+let html = "";
+
+/* =========================
+   🎯 決策模式（最簡潔）
+========================= */
+if(mode === "decision"){
+  html = `
+  <div class="card">
+    <h2>✔ 最佳方案</h2>
+    <p>補到：<b>${best.k.toLocaleString()}</b></p>
+    <p>預估淨收益：
+      <span class="${best.net>0?'green':'red'}">
+      ${best.net.toFixed(0)}
+      </span>
+    </p>
   </div>
-
   `;
+}
+
+/* =========================
+   📊 ROI模式（你朋友要的）
+========================= */
+if(mode === "roi"){
+  html = `
+  <div class="card">
+    <h2>📊 ROI分析</h2>
+
+    <p>ROI：
+      <span class="${roi>0?'green':'red'}">
+      ${(roi*100).toFixed(2)}%
+      </span>
+    </p>
+
+    <p>效率（每1元補流水）：
+      ${efficiency.toFixed(3)}
+    </p>
+
+    <hr>
+
+    <p>最佳補點：${best.k.toLocaleString()}</p>
+    <p>淨收益：${best.net.toFixed(0)}</p>
+  </div>
+  `;
+}
+
+/* =========================
+   📈 全比較模式（進階）
+========================= */
+if(mode === "compare"){
+
+  const sorted = all.sort((a,b)=>b.net-a.net).slice(0,10);
+
+  html = `
+  <div class="card">
+    <h2>📈 階梯排行（Top 10）</h2>
+
+    <p>最佳補點：<b>${best.k.toLocaleString()}</b></p>
+    <p>ROI：${(roi*100).toFixed(2)}%</p>
+
+    <hr>
+
+    <pre>
+${sorted.map(x =>
+`補到 ${x.k} | 淨賺 ${x.net.toFixed(0)} | ROI ${(x.roi*100).toFixed(1)}%`
+).join("\n")}
+    </pre>
+  </div>
+  `;
+}
+
+/* =========================
+   🔍 詳細計算（永遠可展開）
+========================= */
+
+html += `
+<details class="card">
+<summary>▼ 詳細計算</summary>
+
+<pre>
+目前流水：${amount.toLocaleString()}
+目前階梯：${curTier.toLocaleString()}
+目前獎金：${curBonus.toLocaleString()}
+
+----------------------
+
+目標階梯：${best.k.toLocaleString()}
+缺額：
+${best.k} - ${amount} = ${best.gap.toLocaleString()}
+補流水成本：
+${best.gap} × ${COST_RATE} = ${best.cost.toFixed(0)}
+獎金差額：
+${best.bonus - curBonus}
+流水收益：
+${(best.gap * 0.4).toFixed(0)}
+
+----------------------
+最終淨收益：
+${best.net.toFixed(0)}
+
+ROI：
+${(best.roi*100).toFixed(2)}%
+效率：
+${best.efficiency.toFixed(3)}
+
+----------------------
+計畫：${plan.name}
+</pre>
+
+</details>
+`;
+
+document.getElementById("result").innerHTML = html;
+
 }
 
 </script>

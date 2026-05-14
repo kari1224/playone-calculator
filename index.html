@@ -13,8 +13,8 @@
 body{
   margin:0;
   padding:20px;
-  font-family: "Microsoft JhengHei", sans-serif;
-  background: linear-gradient(135deg,#1e3c72,#2a5298);
+  font-family:"Microsoft JhengHei",sans-serif;
+  background:linear-gradient(135deg,#1e3c72,#2a5298);
   min-height:100vh;
   color:white;
 }
@@ -46,7 +46,7 @@ label{
   font-size:15px;
 }
 
-input, select{
+input,select{
   width:100%;
   padding:14px;
   border:none;
@@ -89,7 +89,7 @@ button:hover{
 }
 
 .best-target{
-  font-size:36px;
+  font-size:34px;
   font-weight:bold;
   margin:10px 0;
 }
@@ -147,6 +147,7 @@ summary{
 
 <div class="input-group">
 <label>選擇計畫</label>
+
 <select id="plan">
   <option value="star">繁星計畫</option>
   <option value="support_normal">扶持計畫（普通版）</option>
@@ -156,7 +157,7 @@ summary{
 
 <div class="input-group">
 <label>輸入目前流水</label>
-<input type="number" id="amount" placeholder="例如：158604">
+<input type="number" id="amount" placeholder="例如：21420">
 </div>
 
 <button onclick="analyze()">開始分析</button>
@@ -170,6 +171,8 @@ summary{
 </div>
 
 <script>
+
+const COST_RATE = 0.4;
 
 const plans = {
 
@@ -247,6 +250,7 @@ function analyze(){
   let currentTier = 0;
   let currentBonus = 0;
 
+  // 找目前所在階梯
   for(const t of tiers){
     if(amount >= t){
       currentTier = t;
@@ -256,17 +260,23 @@ function analyze(){
 
   let best = null;
 
+  // 計算所有可跳階方案
   for(const t of tiers){
 
     if(t <= amount) continue;
 
     const gap = t - amount;
-    const cost = gap * 0.3;
 
+    // 補流水成本
+    const cost = gap * COST_RATE;
+
+    // 目標獎金
     const targetBonus = table[t];
 
+    // 實際增加收益
     const profitDiff = targetBonus - currentBonus;
 
+    // 真正淨收益
     const net = profitDiff - cost;
 
     if(!best || net > best.net){
@@ -293,22 +303,31 @@ function analyze(){
     return;
   }
 
-  const positive = best.net >= 0;
+  // 是否值得補
+  const shouldFill = best.net > 0;
 
   document.getElementById("output").innerHTML = `
 
   <div class="card best">
 
     <div class="best-title">
-      ${plan.name}｜最佳方案
+      ${plan.name}｜分析結果
     </div>
 
     <div class="best-target">
-      補到 ${best.target.toLocaleString()}
+      ${
+        shouldFill
+        ? `建議補到 ${best.target.toLocaleString()}`
+        : `不建議補`
+      }
     </div>
 
-    <div class="best-profit ${positive ? "green" : "red"}">
-      ${positive ? "+" : "-"}${Math.abs(best.net).toLocaleString()}
+    <div class="best-profit ${shouldFill ? "green" : "red"}">
+      ${
+        shouldFill
+        ? `預估淨賺 +${Math.round(best.net).toLocaleString()}`
+        : `預估虧損 ${Math.abs(Math.round(best.net)).toLocaleString()}`
+      }
     </div>
 
   </div>
@@ -320,55 +339,46 @@ function analyze(){
       <summary>查看詳細計算</summary>
 
       <div class="calc">
-
 目前流水：
 ${amount.toLocaleString()}
-
+━━━━━━━━━━
 目前階梯：
 ${currentTier.toLocaleString()}
-
 目前獎金：
 ${currentBonus.toLocaleString()}
-
 ━━━━━━━━━━
-
 目標階梯：
 ${best.target.toLocaleString()}
-
 目標獎金：
 ${best.targetBonus.toLocaleString()}
-
 ━━━━━━━━━━
-
 缺額：
-
 ${best.target.toLocaleString()}
 - ${amount.toLocaleString()}
 = ${best.gap.toLocaleString()}
-
 ━━━━━━━━━━
-
 補流水成本：
-
 ${best.gap.toLocaleString()}
-× 0.3
-= ${best.cost.toLocaleString()}
-
+× ${COST_RATE}
+= ${Math.round(best.cost).toLocaleString()}
 ━━━━━━━━━━
-
-獎金增加：
-
+增加收益：
 ${best.targetBonus.toLocaleString()}
 - ${currentBonus.toLocaleString()}
 = ${best.profitDiff.toLocaleString()}
+━━━━━━━━━━
+最終淨收益：
+${best.profitDiff.toLocaleString()}
+- ${Math.round(best.cost).toLocaleString()}
+= ${Math.round(best.net).toLocaleString()}
 
 ━━━━━━━━━━
-
-最終淨收益：
-
-${best.profitDiff.toLocaleString()}
-- ${best.cost.toLocaleString()}
-= ${best.net.toLocaleString()}
+結論：
+${
+  shouldFill
+  ? `因為淨收益為正值，所以建議補流水。`
+  : `因為淨收益為負值，所以不建議補流水。`
+}
 
       </div>
 

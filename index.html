@@ -3,177 +3,382 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>階梯補流水決策器</title>
+<title>PLAYONE 階梯收益分析器</title>
 
 <style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #89f7fe, #66a6ff);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
+*{
+  box-sizing:border-box;
+}
 
-  .container {
-    width: 90%;
-    max-width: 700px;
-    background: rgba(255,255,255,0.25);
-    backdrop-filter: blur(15px);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  }
+body{
+  margin:0;
+  padding:20px;
+  font-family: "Microsoft JhengHei", sans-serif;
+  background: linear-gradient(135deg,#1e3c72,#2a5298);
+  min-height:100vh;
+  color:white;
+}
 
-  h2 {
-    text-align: center;
-    color: white;
-    margin-bottom: 20px;
-  }
+.container{
+  max-width:700px;
+  margin:auto;
+  background:rgba(255,255,255,0.12);
+  backdrop-filter:blur(12px);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.25);
+}
 
-  label {
-    color: white;
-    font-weight: bold;
-  }
+h1{
+  text-align:center;
+  margin-bottom:24px;
+  font-size:32px;
+}
 
-  input {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0 20px;
-    border-radius: 10px;
-    border: none;
-    font-size: 16px;
-  }
+.input-group{
+  margin-bottom:18px;
+}
 
-  button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    cursor: pointer;
-    background: #4a6cf7;
-    color: white;
-    font-weight: bold;
-  }
+label{
+  display:block;
+  margin-bottom:8px;
+  font-weight:bold;
+  font-size:15px;
+}
 
-  button:hover {
-    background: #3a57d6;
-  }
+input, select{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  font-size:16px;
+  outline:none;
+}
 
-  .result {
-    margin-top: 20px;
-    padding: 15px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 10px;
-    white-space: pre-line;
-    color: #111;
-  }
+button{
+  width:100%;
+  padding:16px;
+  border:none;
+  border-radius:16px;
+  background:#00d26a;
+  color:#111;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:hover{
+  transform:scale(1.02);
+}
+
+.card{
+  margin-top:24px;
+  background:rgba(255,255,255,0.15);
+  border-radius:20px;
+  padding:20px;
+}
+
+.best{
+  text-align:center;
+}
+
+.best-title{
+  font-size:18px;
+  opacity:0.8;
+}
+
+.best-target{
+  font-size:36px;
+  font-weight:bold;
+  margin:10px 0;
+}
+
+.best-profit{
+  font-size:28px;
+  font-weight:bold;
+}
+
+.green{
+  color:#71ff9f;
+}
+
+.red{
+  color:#ff8c8c;
+}
+
+.details{
+  margin-top:18px;
+}
+
+details{
+  background:rgba(255,255,255,0.08);
+  padding:14px;
+  border-radius:14px;
+}
+
+summary{
+  cursor:pointer;
+  font-weight:bold;
+  font-size:16px;
+}
+
+.calc{
+  margin-top:12px;
+  line-height:1.8;
+  white-space:pre-line;
+  font-size:15px;
+}
+
+.footer{
+  margin-top:24px;
+  text-align:center;
+  opacity:0.5;
+  font-size:13px;
+}
 </style>
 </head>
 
 <body>
+
 <div class="container">
 
-  <h2>階梯補流水決策器</h2>
+<h1>✨ 階梯收益分析器</h1>
 
-  <label>輸入當前流水</label>
-  <input type="number" id="amount" placeholder="例如：158604" />
+<div class="input-group">
+<label>選擇計畫</label>
+<select id="plan">
+  <option value="star">繁星計畫</option>
+  <option value="support_normal">扶持計畫（普通版）</option>
+  <option value="support_plus">扶持計畫（升級版）</option>
+</select>
+</div>
 
-  <button onclick="calculate()">開始分析</button>
+<div class="input-group">
+<label>輸入目前流水</label>
+<input type="number" id="amount" placeholder="例如：158604">
+</div>
 
-  <div class="result" id="result"></div>
+<button onclick="analyze()">開始分析</button>
+
+<div id="output"></div>
+
+<div class="footer">
+歌璃製作｜love650324
+</div>
 
 </div>
 
 <script>
-const bonusTable = {
-  5000: 500,
-  10000: 1500,
-  15000: 2300,
-  25000: 4000,
-  45000: 7000,
-  65000: 11000,
-  85000: 15000,
-  100000: 20000,
-  150000: 35000,
-  200000: 50000
+
+const plans = {
+
+  star: {
+    name: "繁星計畫",
+    table: {
+      5000: 500,
+      10000: 1500,
+      15000: 2300,
+      25000: 4000,
+      45000: 7000,
+      65000: 11000,
+      85000: 15000,
+      100000: 20000,
+      150000: 35000,
+      200000: 50000
+    }
+  },
+
+  support_normal: {
+    name: "扶持計畫（普通版）",
+    table: {
+      10000: 1000,
+      15000: 1500,
+      25000: 2700,
+      45000: 5000,
+      65000: 7300,
+      85000: 9800,
+      100000: 12000,
+      150000: 18000,
+      200000: 24000,
+      300000: 37000,
+      500000: 65000,
+      1000000: 130000
+    }
+  },
+
+  support_plus: {
+    name: "扶持計畫（升級版）",
+    table: {
+      10000: 1000,
+      15000: 1500,
+      25000: 2700,
+      45000: 6000,
+      65000: 9000,
+      85000: 12000,
+      100000: 15000,
+      150000: 25000,
+      200000: 34000,
+      300000: 52000,
+      500000: 88000,
+      1000000: 180000
+    }
+  }
+
 };
 
-function calculate() {
-  const amount = parseInt(document.getElementById("amount").value);
+function analyze(){
 
-  if (isNaN(amount) || amount <= 0) {
-    document.getElementById("result").innerText = "請輸入正確的流水數字";
+  const amount = parseInt(document.getElementById("amount").value);
+  const planKey = document.getElementById("plan").value;
+
+  if(isNaN(amount) || amount <= 0){
+    alert("請輸入正確流水");
     return;
   }
 
-  const tiers = Object.keys(bonusTable).map(Number).sort((a,b)=>a-b);
+  const plan = plans[planKey];
+  const table = plan.table;
 
-  // 找目前階梯
-  let baseTier = 0;
-  let baseBonus = 0;
+  const tiers = Object.keys(table)
+    .map(Number)
+    .sort((a,b)=>a-b);
 
-  for (const t of tiers) {
-    if (amount >= t) {
-      baseTier = t;
-      baseBonus = bonusTable[t];
+  let currentTier = 0;
+  let currentBonus = 0;
+
+  for(const t of tiers){
+    if(amount >= t){
+      currentTier = t;
+      currentBonus = table[t];
     }
   }
 
-  let results = [];
   let best = null;
 
-  for (const t of tiers) {
-    if (t <= amount) continue;
+  for(const t of tiers){
+
+    if(t <= amount) continue;
 
     const gap = t - amount;
     const cost = gap * 0.3;
-    const income = bonusTable[t];
-    const net = income - baseBonus - cost;
 
-    const item = { t, gap, cost, income, net };
+    const targetBonus = table[t];
 
-    results.push(item);
+    const profitDiff = targetBonus - currentBonus;
 
-    if (!best || net > best.net) {
-      best = item;
+    const net = profitDiff - cost;
+
+    if(!best || net > best.net){
+
+      best = {
+        target:t,
+        gap,
+        cost,
+        targetBonus,
+        profitDiff,
+        net
+      };
+
     }
+
   }
 
-  let text =
-`當前流水：${amount.toLocaleString()}
-目前階梯：${baseTier.toLocaleString()}
-目前獎金：${baseBonus.toLocaleString()}
-
-----------------------------
-
-各階梯分析：
-
-`;
-
-  for (const r of results) {
-    text +=
-`▶ ${r.t.toLocaleString()}
-缺額：${r.gap.toLocaleString()}
-成本：${r.cost.toLocaleString()}
-獎金：${r.income.toLocaleString()}
-淨收益：${r.net.toLocaleString()} (${r.net >= 0 ? "賺" : "虧"})
-
-`;
+  if(!best){
+    document.getElementById("output").innerHTML = `
+      <div class="card">
+        已達最高階梯
+      </div>
+    `;
+    return;
   }
 
-  if (best) {
-    text +=
-`========================
-🔥 最佳選擇：
-補到 ${best.t.toLocaleString()}
-預估淨收益：${best.net.toLocaleString()} (${best.net >= 0 ? "賺" : "虧"})`;
-  }
+  const positive = best.net >= 0;
 
-  document.getElementById("result").innerText = text;
+  document.getElementById("output").innerHTML = `
+
+  <div class="card best">
+
+    <div class="best-title">
+      ${plan.name}｜最佳方案
+    </div>
+
+    <div class="best-target">
+      補到 ${best.target.toLocaleString()}
+    </div>
+
+    <div class="best-profit ${positive ? "green" : "red"}">
+      ${positive ? "+" : "-"}${Math.abs(best.net).toLocaleString()}
+    </div>
+
+  </div>
+
+  <div class="details">
+
+    <details>
+
+      <summary>查看詳細計算</summary>
+
+      <div class="calc">
+
+目前流水：
+${amount.toLocaleString()}
+
+目前階梯：
+${currentTier.toLocaleString()}
+
+目前獎金：
+${currentBonus.toLocaleString()}
+
+━━━━━━━━━━
+
+目標階梯：
+${best.target.toLocaleString()}
+
+目標獎金：
+${best.targetBonus.toLocaleString()}
+
+━━━━━━━━━━
+
+缺額：
+
+${best.target.toLocaleString()}
+- ${amount.toLocaleString()}
+= ${best.gap.toLocaleString()}
+
+━━━━━━━━━━
+
+補流水成本：
+
+${best.gap.toLocaleString()}
+× 0.3
+= ${best.cost.toLocaleString()}
+
+━━━━━━━━━━
+
+獎金增加：
+
+${best.targetBonus.toLocaleString()}
+- ${currentBonus.toLocaleString()}
+= ${best.profitDiff.toLocaleString()}
+
+━━━━━━━━━━
+
+最終淨收益：
+
+${best.profitDiff.toLocaleString()}
+- ${best.cost.toLocaleString()}
+= ${best.net.toLocaleString()}
+
+      </div>
+
+    </details>
+
+  </div>
+
+  `;
 }
+
 </script>
 
 </body>

@@ -1,104 +1,142 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>流水獎勵計算器</title>
 
 <style>
-    *{
-        box-sizing:border-box;
-        font-family:"Microsoft JhengHei",sans-serif;
-    }
 
-    body{
-        background:#0f172a;
-        color:white;
-        margin:0;
-        padding:30px;
-    }
+*{
+    box-sizing:border-box;
+    font-family:"Microsoft JhengHei",sans-serif;
+}
 
-    .container{
-        max-width:900px;
-        margin:auto;
-    }
+body{
+    background:#0f172a;
+    color:white;
+    margin:0;
+    padding:30px;
+}
 
-    h1{
-        text-align:center;
-        margin-bottom:30px;
-    }
+.container{
+    max-width:900px;
+    margin:auto;
+}
 
-    .card{
-        background:#1e293b;
-        border-radius:20px;
-        padding:25px;
-        margin-bottom:20px;
-        box-shadow:0 0 15px rgba(0,0,0,0.3);
-    }
+.title{
+    text-align:center;
+    font-size:36px;
+    font-weight:bold;
+    margin-bottom:30px;
+}
 
-    label{
-        display:block;
-        margin-bottom:8px;
-        font-size:18px;
-    }
+.card{
+    background:#1e293b;
+    padding:25px;
+    border-radius:20px;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+}
 
-    select,input{
-        width:100%;
-        padding:12px;
-        border:none;
-        border-radius:10px;
-        margin-bottom:20px;
-        font-size:18px;
-    }
+label{
+    display:block;
+    margin-bottom:10px;
+    font-size:18px;
+}
 
-    button{
-        width:100%;
-        padding:15px;
-        border:none;
-        border-radius:12px;
-        background:#38bdf8;
-        color:white;
-        font-size:20px;
-        cursor:pointer;
-        font-weight:bold;
-    }
+select,input{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    margin-bottom:20px;
+    font-size:18px;
+}
 
-    button:hover{
-        background:#0ea5e9;
-    }
+button{
+    border:none;
+    cursor:pointer;
+}
 
-    .result{
-        margin-top:25px;
-        line-height:2;
-        font-size:18px;
-    }
+.mainBtn{
+    width:100%;
+    padding:16px;
+    border-radius:14px;
+    background:#38bdf8;
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+}
 
-    .good{
-        color:#4ade80;
-        font-weight:bold;
-    }
+.mainBtn:hover{
+    background:#0ea5e9;
+}
 
-    .bad{
-        color:#f87171;
-        font-weight:bold;
-    }
+.detailBtn{
+    margin-top:20px;
+    padding:12px 18px;
+    border-radius:10px;
+    background:#475569;
+    color:white;
+    font-size:16px;
+}
 
-    table{
-        width:100%;
-        border-collapse:collapse;
-        margin-top:20px;
-    }
+.result{
+    margin-top:25px;
+    line-height:2.2;
+    font-size:20px;
+}
 
-    th,td{
-        border:1px solid #334155;
-        padding:10px;
-        text-align:center;
-    }
+.good{
+    color:#4ade80;
+    font-weight:bold;
+    font-size:24px;
+}
 
-    th{
-        background:#334155;
-    }
+.bad{
+    color:#f87171;
+    font-weight:bold;
+    font-size:24px;
+}
+
+.mid{
+    color:#facc15;
+    font-weight:bold;
+    font-size:24px;
+}
+
+#detailBox{
+    display:none;
+    margin-top:20px;
+    background:#0f172a;
+    padding:20px;
+    border-radius:15px;
+    line-height:2;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th,td{
+    border:1px solid #334155;
+    padding:12px;
+    text-align:center;
+}
+
+th{
+    background:#334155;
+}
+
+.rewardTitle{
+    font-size:26px;
+    margin-bottom:10px;
+}
+
 </style>
 </head>
 
@@ -106,31 +144,42 @@
 
 <div class="container">
 
-    <h1>流水獎勵計算器</h1>
+    <div class="title">
+        流水獎勵計算器
+    </div>
 
     <div class="card">
 
         <label>選擇計畫</label>
+
         <select id="plan">
             <option value="star">繁星計畫</option>
-            <option value="playone_normal">PLAYONE 普通版</option>
-            <option value="playone_upgrade">PLAYONE 升級版</option>
+            <option value="normal">PLAYONE 普通版</option>
+            <option value="upgrade">PLAYONE 升級版</option>
         </select>
 
         <label>輸入目前流水</label>
-        <input type="number" id="currentFlow" placeholder="例如：33947">
 
-        <button onclick="calculate()">
+        <input type="number" id="currentFlow" placeholder="請輸入目前流水">
+
+        <button class="mainBtn" onclick="calculate()">
             開始計算
         </button>
 
         <div class="result" id="result"></div>
+
+        <div id="detailBox"></div>
+
     </div>
 
     <div class="card">
-        <h2>獎勵表</h2>
 
-        <table id="rewardTable">
+        <div class="rewardTitle">
+            獎勵表
+        </div>
+
+        <table>
+
             <thead>
                 <tr>
                     <th>流水</th>
@@ -139,8 +188,11 @@
                     <th>升級版</th>
                 </tr>
             </thead>
-            <tbody></tbody>
+
+            <tbody id="rewardTable"></tbody>
+
         </table>
+
     </div>
 
 </div>
@@ -148,34 +200,51 @@
 <script>
 
 const rewardData = [
+
     {flow:5000, star:500},
+
     {flow:10000, star:1500, normal:1000, upgrade:1000},
+
     {flow:15000, star:2300, normal:1500, upgrade:1500},
+
     {flow:25000, star:4000, normal:2700, upgrade:2700},
+
     {flow:45000, star:7000, normal:5000, upgrade:6000},
+
     {flow:65000, star:11000, normal:7300, upgrade:9000},
+
     {flow:85000, star:15000, normal:9800, upgrade:12000},
+
     {flow:100000, star:20000, normal:12000, upgrade:15000},
+
     {flow:150000, star:35000, normal:18000, upgrade:25000},
+
     {flow:200000, star:50000, normal:24000, upgrade:34000},
+
     {flow:300000, normal:37000, upgrade:52000},
+
     {flow:500000, normal:65000, upgrade:88000},
+
     {flow:1000000, normal:130000, upgrade:180000},
+
 ];
 
 function getReward(item, plan){
+
     if(plan === "star") return item.star || 0;
-    if(plan === "playone_normal") return item.normal || 0;
-    if(plan === "playone_upgrade") return item.upgrade || 0;
+
+    if(plan === "normal") return item.normal || 0;
+
+    if(plan === "upgrade") return item.upgrade || 0;
 }
 
 function renderTable(){
 
-    const tbody = document.querySelector("#rewardTable tbody");
+    const table = document.getElementById("rewardTable");
 
     rewardData.forEach(item=>{
 
-        tbody.innerHTML += `
+        table.innerHTML += `
             <tr>
                 <td>${item.flow.toLocaleString()}</td>
                 <td>${(item.star || 0).toLocaleString()}</td>
@@ -188,13 +257,27 @@ function renderTable(){
 
 renderTable();
 
+function toggleDetail(){
+
+    const box = document.getElementById("detailBox");
+
+    if(box.style.display === "none"){
+        box.style.display = "block";
+    }else{
+        box.style.display = "none";
+    }
+}
+
 function calculate(){
 
-    const plan = document.getElementById("plan").value;
     const currentFlow = Number(document.getElementById("currentFlow").value);
 
+    const plan = document.getElementById("plan").value;
+
     let currentReward = 0;
-    let nextTarget = null;
+
+    let nextFlow = 0;
+
     let nextReward = 0;
 
     for(let i=0;i<rewardData.length;i++){
@@ -202,74 +285,176 @@ function calculate(){
         const reward = getReward(rewardData[i],plan);
 
         if(currentFlow >= rewardData[i].flow && reward > 0){
+
             currentReward = reward;
         }
 
         if(currentFlow < rewardData[i].flow && reward > 0){
-            nextTarget = rewardData[i].flow;
+
+            nextFlow = rewardData[i].flow;
+
             nextReward = reward;
+
             break;
         }
     }
 
-    if(nextTarget === null){
+    if(nextFlow === 0){
+
         document.getElementById("result").innerHTML = `
             <div class="good">
-                你已達最高階獎勵 🎉
+                已達最高階獎勵 🎉
             </div>
         `;
+
         return;
     }
 
-    const gap = nextTarget - currentFlow;
+    const gap = nextFlow - currentFlow;
 
-    // 公式
     const extraBonus = nextReward - currentReward;
 
-    // 實際虧損率
-    const realCostRate = 0.7 - 0.4;
-
-    const estimatedCost = gap * realCostRate;
+    const estimatedCost = Math.round(gap * 0.3);
 
     const netProfit = extraBonus - estimatedCost;
 
-    let worthText = "";
-    let worthClass = "";
+    let resultText = "";
+
+    let resultClass = "";
 
     if(netProfit > 0){
-        worthText = "值得拼下一階 ✅";
-        worthClass = "good";
+
+        resultText = "值得拼下一階 ✅";
+
+        resultClass = "good";
+
+    }else if(netProfit < 0){
+
+        resultText = "不划算 ❌";
+
+        resultClass = "bad";
+
     }else{
-        worthText = "不划算 ❌";
-        worthClass = "bad";
+
+        resultText = "可拼可不拼 🤏<br>也可以看看廳返或其他收益";
+
+        resultClass = "mid";
     }
 
     document.getElementById("result").innerHTML = `
-        <hr>
 
-        <div>目前獎金：${currentReward.toLocaleString()}</div>
+        <div>
+            目前獎金：${currentReward.toLocaleString()}
+        </div>
 
-        <div>下一階流水：${nextTarget.toLocaleString()}</div>
+        <div>
+            下一階流水｜獎金：
+            ${nextFlow.toLocaleString()}
+            ｜${nextReward.toLocaleString()}
+        </div>
 
-        <div>下一階獎金：${nextReward.toLocaleString()}</div>
+        <div>
+            還差流水：${gap.toLocaleString()}
+        </div>
 
-        <div>還差流水：${gap.toLocaleString()}</div>
+        <div>
+            額外可多拿：${extraBonus.toLocaleString()}
+        </div>
 
-        <div>額外可多拿：${extraBonus.toLocaleString()}</div>
-
-        <div>補流水實際成本：
-            ${estimatedCost.toFixed(0)}
+        <div>
+            補流水實際成本：
+            ${estimatedCost.toLocaleString()}
         </div>
 
         <div>
             預估淨收益：
-            <b>${netProfit.toFixed(0)}</b>
+            ${netProfit.toLocaleString()}
         </div>
 
-        <div class="${worthClass}">
-            ${worthText}
+        <div class="${resultClass}">
+            ${resultText}
         </div>
+
+        <button class="detailBtn" onclick="toggleDetail()">
+            查看詳細算式
+        </button>
     `;
+
+    document.getElementById("detailBox").innerHTML = `
+
+        <h3>詳細算式</h3>
+
+        <hr>
+
+        <div>
+            缺額
+            =
+            ${nextFlow.toLocaleString()}
+            -
+            ${currentFlow.toLocaleString()}
+            =
+            ${gap.toLocaleString()}
+        </div>
+
+        <br>
+
+        <div>
+            補流水成本
+            =
+            ${gap.toLocaleString()}
+            × 0.7
+            =
+            ${(gap * 0.7).toFixed(0)}
+        </div>
+
+        <br>
+
+        <div>
+            流水收益
+            =
+            ${gap.toLocaleString()}
+            × 0.4
+            =
+            ${(gap * 0.4).toFixed(0)}
+        </div>
+
+        <br>
+
+        <div>
+            額外獎金
+            =
+            ${nextReward.toLocaleString()}
+            -
+            ${currentReward.toLocaleString()}
+            =
+            ${extraBonus.toLocaleString()}
+        </div>
+
+        <br>
+
+        <div>
+            淨收益
+            =
+            流水收益 + 額外獎金 - 補流水成本
+        </div>
+
+        <div>
+            =
+            ${(gap * 0.4).toFixed(0)}
+            +
+            ${extraBonus.toLocaleString()}
+            -
+            ${(gap * 0.7).toFixed(0)}
+        </div>
+
+        <div>
+            =
+            <b>${netProfit.toLocaleString()}</b>
+        </div>
+
+    `;
+
+    document.getElementById("detailBox").style.display = "none";
 }
 
 </script>

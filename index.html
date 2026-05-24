@@ -4,69 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>流水獎勵計算器</title>
+<title>流水計算器</title>
 
 <style>
 
-*{
-    box-sizing:border-box;
-    font-family:"Microsoft JhengHei",sans-serif;
-}
-
 body{
-    background:#0f172a;
-    color:white;
     margin:0;
-    padding:30px;
+    background:#0f172a;
+    color:#fff;
+    font-family:"Microsoft JhengHei";
 }
 
 .container{
     max-width:900px;
     margin:auto;
+    padding:30px;
 }
 
 .title{
     text-align:center;
-    font-size:36px;
+    font-size:34px;
     font-weight:bold;
-    margin-bottom:30px;
+    margin-bottom:25px;
 }
 
 .card{
     background:#1e293b;
-    padding:25px;
-    border-radius:20px;
+    border-radius:18px;
+    padding:22px;
     margin-bottom:20px;
-    box-shadow:0 0 15px rgba(0,0,0,0.3);
 }
 
 label{
     display:block;
-    margin-bottom:10px;
-    font-size:18px;
+    margin:10px 0 6px;
 }
 
 select,input{
     width:100%;
-    padding:14px;
+    padding:12px;
+    border-radius:10px;
     border:none;
-    border-radius:12px;
-    margin-bottom:20px;
-    font-size:18px;
+    font-size:16px;
 }
 
 button{
-    border:none;
     cursor:pointer;
+    border:none;
 }
 
 .mainBtn{
     width:100%;
-    padding:16px;
-    border-radius:14px;
+    padding:14px;
+    margin-top:10px;
     background:#38bdf8;
-    color:white;
-    font-size:20px;
+    color:#fff;
+    font-size:18px;
+    border-radius:12px;
     font-weight:bold;
 }
 
@@ -74,57 +68,44 @@ button{
     background:#0ea5e9;
 }
 
-.detailBtn{
+.result{
     margin-top:20px;
-    padding:12px 18px;
+    line-height:2;
+    font-size:18px;
+}
+
+.good{color:#4ade80;font-weight:bold;font-size:22px;}
+.bad{color:#f87171;font-weight:bold;font-size:22px;}
+.mid{color:#facc15;font-weight:bold;font-size:22px;}
+
+.detailBtn{
+    margin-top:12px;
+    padding:10px 14px;
     border-radius:10px;
     background:#475569;
-    color:white;
-    font-size:16px;
-}
-
-.result{
-    margin-top:25px;
-    line-height:2.2;
-    font-size:20px;
-}
-
-.good{
-    color:#4ade80;
-    font-weight:bold;
-    font-size:24px;
-}
-
-.bad{
-    color:#f87171;
-    font-weight:bold;
-    font-size:24px;
-}
-
-.mid{
-    color:#facc15;
-    font-weight:bold;
-    font-size:24px;
+    color:#fff;
 }
 
 #detailBox{
     display:none;
-    margin-top:20px;
+    margin-top:15px;
+    padding:15px;
     background:#0f172a;
-    padding:20px;
-    border-radius:15px;
+    border-radius:12px;
     line-height:2;
 }
 
 table{
-    width:100%;
+    width:80%;
+    margin:20px auto 0;
     border-collapse:collapse;
-    margin-top:20px;
+    opacity:0.6;
+    font-size:14px;
 }
 
 th,td{
     border:1px solid #334155;
-    padding:12px;
+    padding:8px;
     text-align:center;
 }
 
@@ -132,9 +113,10 @@ th{
     background:#334155;
 }
 
-.rewardTitle{
-    font-size:26px;
-    margin-bottom:10px;
+.smallTitle{
+    text-align:center;
+    margin-top:10px;
+    opacity:0.7;
 }
 
 </style>
@@ -144,317 +126,147 @@ th{
 
 <div class="container">
 
-    <div class="title">
-        流水獎勵計算器
-    </div>
+<div class="title">流水獎勵計算器</div>
 
-    <div class="card">
+<div class="card">
 
-        <label>選擇計畫</label>
+<label>選擇計畫</label>
+<select id="plan">
+    <option value="star">繁星計畫</option>
+    <option value="normal">PLAYONE 普通版</option>
+    <option value="upgrade">PLAYONE 升級版</option>
+</select>
 
-        <select id="plan">
-            <option value="star">繁星計畫</option>
-            <option value="normal">PLAYONE 普通版</option>
-            <option value="upgrade">PLAYONE 升級版</option>
-        </select>
+<label>目前流水</label>
+<input id="flow" type="number" placeholder="輸入目前流水">
 
-        <label>輸入目前流水</label>
+<label>收流水比例（可改 0.7 / 0.71 / 0.72）</label>
+<input id="rate" type="number" step="0.01" value="0.7">
 
-        <input type="number" id="currentFlow" placeholder="請輸入目前流水">
+<button class="mainBtn" onclick="calc()">開始計算</button>
 
-        <button class="mainBtn" onclick="calculate()">
-            開始計算
-        </button>
+<div class="result" id="result"></div>
 
-        <div class="result" id="result"></div>
+<button class="detailBtn" onclick="toggle()">查看詳細算式</button>
 
-        <div id="detailBox"></div>
+<div id="detailBox"></div>
 
-    </div>
+</div>
 
-    <div class="card">
+<div class="smallTitle">獎勵表（僅參考）</div>
 
-        <div class="rewardTitle">
-            獎勵表
-        </div>
-
-        <table>
-
-            <thead>
-                <tr>
-                    <th>流水</th>
-                    <th>繁星計畫</th>
-                    <th>普通版</th>
-                    <th>升級版</th>
-                </tr>
-            </thead>
-
-            <tbody id="rewardTable"></tbody>
-
-        </table>
-
-    </div>
+<table>
+<tr>
+<th>流水</th>
+<th>繁星</th>
+<th>普通</th>
+<th>升級</th>
+</tr>
+<tbody id="tb"></tbody>
+</table>
 
 </div>
 
 <script>
 
-const rewardData = [
-
-    {flow:5000, star:500},
-
-    {flow:10000, star:1500, normal:1000, upgrade:1000},
-
-    {flow:15000, star:2300, normal:1500, upgrade:1500},
-
-    {flow:25000, star:4000, normal:2700, upgrade:2700},
-
-    {flow:45000, star:7000, normal:5000, upgrade:6000},
-
-    {flow:65000, star:11000, normal:7300, upgrade:9000},
-
-    {flow:85000, star:15000, normal:9800, upgrade:12000},
-
-    {flow:100000, star:20000, normal:12000, upgrade:15000},
-
-    {flow:150000, star:35000, normal:18000, upgrade:25000},
-
-    {flow:200000, star:50000, normal:24000, upgrade:34000},
-
-    {flow:300000, normal:37000, upgrade:52000},
-
-    {flow:500000, normal:65000, upgrade:88000},
-
-    {flow:1000000, normal:130000, upgrade:180000},
-
+const data = [
+{flow:5000, star:500},
+{flow:10000, star:1500, normal:1000, upgrade:1000},
+{flow:15000, star:2300, normal:1500, upgrade:1500},
+{flow:25000, star:4000, normal:2700, upgrade:2700},
+{flow:45000, star:7000, normal:5000, upgrade:6000},
+{flow:65000, star:11000, normal:7300, upgrade:9000},
+{flow:85000, star:15000, normal:9800, upgrade:12000},
+{flow:100000, star:20000, normal:12000, upgrade:15000},
 ];
 
-function getReward(item, plan){
-
-    if(plan === "star") return item.star || 0;
-
-    if(plan === "normal") return item.normal || 0;
-
-    if(plan === "upgrade") return item.upgrade || 0;
+function reward(item, plan){
+if(plan==="star") return item.star||0;
+if(plan==="normal") return item.normal||0;
+if(plan==="upgrade") return item.upgrade||0;
 }
 
-function renderTable(){
+function render(){
+let tb=document.getElementById("tb");
+data.forEach(d=>{
+tb.innerHTML+=`
+<tr>
+<td>${d.flow.toLocaleString()}</td>
+<td>${(d.star||0).toLocaleString()}</td>
+<td>${(d.normal||0).toLocaleString()}</td>
+<td>${(d.upgrade||0).toLocaleString()}</td>
+</tr>`;
+});
+}
+render();
 
-    const table = document.getElementById("rewardTable");
+let detailHTML="";
 
-    rewardData.forEach(item=>{
-
-        table.innerHTML += `
-            <tr>
-                <td>${item.flow.toLocaleString()}</td>
-                <td>${(item.star || 0).toLocaleString()}</td>
-                <td>${(item.normal || 0).toLocaleString()}</td>
-                <td>${(item.upgrade || 0).toLocaleString()}</td>
-            </tr>
-        `;
-    });
+function toggle(){
+let d=document.getElementById("detailBox");
+d.style.display = d.style.display==="none"?"block":"none";
 }
 
-renderTable();
+function calc(){
 
-function toggleDetail(){
+let flow=Number(document.getElementById("flow").value);
+let rate=Number(document.getElementById("rate").value);
+let plan=document.getElementById("plan").value;
 
-    const box = document.getElementById("detailBox");
+let cur=0,nextF=0,nextR=0;
 
-    if(box.style.display === "none"){
-        box.style.display = "block";
-    }else{
-        box.style.display = "none";
-    }
+for(let i=0;i<data.length;i++){
+let r=reward(data[i],plan);
+if(flow>=data[i].flow) cur=r;
+if(flow<data[i].flow){
+nextF=data[i].flow;
+nextR=r;
+break;
+}
 }
 
-function calculate(){
+let gap=nextF-flow;
+let extra=nextR-cur;
 
-    const currentFlow = Number(document.getElementById("currentFlow").value);
+let costRate=rate-0.4;
+let cost=gap*costRate;
+let net=extra-cost;
 
-    const plan = document.getElementById("plan").value;
+let text="",cls="";
 
-    let currentReward = 0;
+if(net>0){
+text="值得拼下一階 ✅";cls="good";
+}else if(net<0){
+text="不划算 ❌";cls="bad";
+}else{
+text="剛好打平 ⚖️<br>看你要不要拼排名或其他獎勵";
+cls="mid";
+}
 
-    let nextFlow = 0;
+document.getElementById("result").innerHTML=`
+目前獎金：${cur.toLocaleString()}<br>
+下一階流水｜獎金：${nextF.toLocaleString()}｜${nextR.toLocaleString()}<br>
+還差流水：${gap.toLocaleString()}<br>
+額外可多拿：${extra.toLocaleString()}<br>
+補流水實際成本：${Math.round(cost)}<br>
+預估淨收益：${Math.round(net)}<br>
+<div class="${cls}">${text}</div>
+`;
 
-    let nextReward = 0;
+detailHTML=`
+<h3>詳細算式</h3>
+<hr>
+缺額 = ${nextF}-${flow} = ${gap}<br><br>
+補流水成本 = ${gap} × ${rate} = ${Math.round(gap*rate)}<br>
+流水收益 = ${gap} × 0.4 = ${Math.round(gap*0.4)}<br>
+額外獎金 = ${nextR}-${cur} = ${extra}<br><br>
+淨收益 = 流水收益 + 額外獎金 - 補流水成本<br>
+= ${Math.round(gap*0.4)} + ${extra} - ${Math.round(gap*rate)}<br>
+= <b>${Math.round(net)}</b>
+`;
 
-    for(let i=0;i<rewardData.length;i++){
-
-        const reward = getReward(rewardData[i],plan);
-
-        if(currentFlow >= rewardData[i].flow && reward > 0){
-
-            currentReward = reward;
-        }
-
-        if(currentFlow < rewardData[i].flow && reward > 0){
-
-            nextFlow = rewardData[i].flow;
-
-            nextReward = reward;
-
-            break;
-        }
-    }
-
-    if(nextFlow === 0){
-
-        document.getElementById("result").innerHTML = `
-            <div class="good">
-                已達最高階獎勵 🎉
-            </div>
-        `;
-
-        return;
-    }
-
-    const gap = nextFlow - currentFlow;
-
-    const extraBonus = nextReward - currentReward;
-
-    const estimatedCost = Math.round(gap * 0.3);
-
-    const netProfit = extraBonus - estimatedCost;
-
-    let resultText = "";
-
-    let resultClass = "";
-
-    if(netProfit > 0){
-
-        resultText = "值得拼下一階 ✅";
-
-        resultClass = "good";
-
-    }else if(netProfit < 0){
-
-        resultText = "不划算 ❌";
-
-        resultClass = "bad";
-
-    }else{
-
-        resultText = "可拼可不拼 🤏<br>也可以看看廳返或其他收益";
-
-        resultClass = "mid";
-    }
-
-    document.getElementById("result").innerHTML = `
-
-        <div>
-            目前獎金：${currentReward.toLocaleString()}
-        </div>
-
-        <div>
-            下一階流水｜獎金：
-            ${nextFlow.toLocaleString()}
-            ｜${nextReward.toLocaleString()}
-        </div>
-
-        <div>
-            還差流水：${gap.toLocaleString()}
-        </div>
-
-        <div>
-            額外可多拿：${extraBonus.toLocaleString()}
-        </div>
-
-        <div>
-            補流水實際成本：
-            ${estimatedCost.toLocaleString()}
-        </div>
-
-        <div>
-            預估淨收益：
-            ${netProfit.toLocaleString()}
-        </div>
-
-        <div class="${resultClass}">
-            ${resultText}
-        </div>
-
-        <button class="detailBtn" onclick="toggleDetail()">
-            查看詳細算式
-        </button>
-    `;
-
-    document.getElementById("detailBox").innerHTML = `
-
-        <h3>詳細算式</h3>
-
-        <hr>
-
-        <div>
-            缺額
-            =
-            ${nextFlow.toLocaleString()}
-            -
-            ${currentFlow.toLocaleString()}
-            =
-            ${gap.toLocaleString()}
-        </div>
-
-        <br>
-
-        <div>
-            補流水成本
-            =
-            ${gap.toLocaleString()}
-            × 0.7
-            =
-            ${(gap * 0.7).toFixed(0)}
-        </div>
-
-        <br>
-
-        <div>
-            流水收益
-            =
-            ${gap.toLocaleString()}
-            × 0.4
-            =
-            ${(gap * 0.4).toFixed(0)}
-        </div>
-
-        <br>
-
-        <div>
-            額外獎金
-            =
-            ${nextReward.toLocaleString()}
-            -
-            ${currentReward.toLocaleString()}
-            =
-            ${extraBonus.toLocaleString()}
-        </div>
-
-        <br>
-
-        <div>
-            淨收益
-            =
-            流水收益 + 額外獎金 - 補流水成本
-        </div>
-
-        <div>
-            =
-            ${(gap * 0.4).toFixed(0)}
-            +
-            ${extraBonus.toLocaleString()}
-            -
-            ${(gap * 0.7).toFixed(0)}
-        </div>
-
-        <div>
-            =
-            <b>${netProfit.toLocaleString()}</b>
-        </div>
-
-    `;
-
-    document.getElementById("detailBox").style.display = "none";
+document.getElementById("detailBox").innerHTML=detailHTML;
+document.getElementById("detailBox").style.display="none";
 }
 
 </script>

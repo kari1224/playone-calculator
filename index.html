@@ -3,56 +3,102 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>階梯補流水分析器（雙模型）</title>
+
+<title>流水獎勵計算器</title>
 
 <style>
-body{
-  margin:0;
-  font-family:"Microsoft JhengHei";
-  background:linear-gradient(135deg,#1e3c72,#2a5298);
-  color:white;
-  padding:20px;
-}
+    *{
+        box-sizing:border-box;
+        font-family:"Microsoft JhengHei",sans-serif;
+    }
 
-.container{
-  max-width:820px;
-  margin:auto;
-  background:rgba(255,255,255,0.12);
-  padding:24px;
-  border-radius:18px;
-  backdrop-filter:blur(10px);
-}
+    body{
+        background:#0f172a;
+        color:white;
+        margin:0;
+        padding:30px;
+    }
 
-h1{text-align:center;}
+    .container{
+        max-width:900px;
+        margin:auto;
+    }
 
-input,select,button{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:10px;
-  border:none;
-  font-size:16px;
-}
+    h1{
+        text-align:center;
+        margin-bottom:30px;
+    }
 
-button{
-  background:#00d26a;
-  font-weight:bold;
-  cursor:pointer;
-}
+    .card{
+        background:#1e293b;
+        border-radius:20px;
+        padding:25px;
+        margin-bottom:20px;
+        box-shadow:0 0 15px rgba(0,0,0,0.3);
+    }
 
-.card{
-  margin-top:16px;
-  padding:14px;
-  background:rgba(255,255,255,0.15);
-  border-radius:14px;
-}
+    label{
+        display:block;
+        margin-bottom:8px;
+        font-size:18px;
+    }
 
-summary{cursor:pointer;font-weight:bold;}
-details{margin-top:10px;}
+    select,input{
+        width:100%;
+        padding:12px;
+        border:none;
+        border-radius:10px;
+        margin-bottom:20px;
+        font-size:18px;
+    }
 
-.green{color:#6dff9b;}
-.red{color:#ff7a7a;}
-.blue{color:#7fd3ff;}
+    button{
+        width:100%;
+        padding:15px;
+        border:none;
+        border-radius:12px;
+        background:#38bdf8;
+        color:white;
+        font-size:20px;
+        cursor:pointer;
+        font-weight:bold;
+    }
+
+    button:hover{
+        background:#0ea5e9;
+    }
+
+    .result{
+        margin-top:25px;
+        line-height:2;
+        font-size:18px;
+    }
+
+    .good{
+        color:#4ade80;
+        font-weight:bold;
+    }
+
+    .bad{
+        color:#f87171;
+        font-weight:bold;
+    }
+
+    table{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:20px;
+    }
+
+    th,td{
+        border:1px solid #334155;
+        padding:10px;
+        text-align:center;
+    }
+
+    th{
+        background:#334155;
+    }
 </style>
 </head>
 
@@ -60,220 +106,170 @@ details{margin-top:10px;}
 
 <div class="container">
 
-<h1>📊 階梯補流水分析器 v6</h1>
+    <h1>流水獎勵計算器</h1>
 
-<input id="amount" type="number" placeholder="目前流水">
+    <div class="card">
 
-<select id="plan">
-  <option value="star">繁星計畫</option>
-  <option value="support_normal">扶持計畫（普通版）</option>
-  <option value="support_plus">扶持計畫（升級版）</option>
-</select>
+        <label>選擇計畫</label>
+        <select id="plan">
+            <option value="star">繁星計畫</option>
+            <option value="playone_normal">PLAYONE 普通版</option>
+            <option value="playone_upgrade">PLAYONE 升級版</option>
+        </select>
 
-<button onclick="calc()">開始分析</button>
+        <label>輸入目前流水</label>
+        <input type="number" id="currentFlow" placeholder="例如：33947">
 
-<div id="result"></div>
+        <button onclick="calculate()">
+            開始計算
+        </button>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>獎勵表</h2>
+
+        <table id="rewardTable">
+            <thead>
+                <tr>
+                    <th>流水</th>
+                    <th>繁星計畫</th>
+                    <th>普通版</th>
+                    <th>升級版</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 
 </div>
 
 <script>
 
-const COST_RATE = 0.3;
-const REVENUE_RATE = 0.4;
+const rewardData = [
+    {flow:5000, star:500},
+    {flow:10000, star:1500, normal:1000, upgrade:1000},
+    {flow:15000, star:2300, normal:1500, upgrade:1500},
+    {flow:25000, star:4000, normal:2700, upgrade:2700},
+    {flow:45000, star:7000, normal:5000, upgrade:6000},
+    {flow:65000, star:11000, normal:7300, upgrade:9000},
+    {flow:85000, star:15000, normal:9800, upgrade:12000},
+    {flow:100000, star:20000, normal:12000, upgrade:15000},
+    {flow:150000, star:35000, normal:18000, upgrade:25000},
+    {flow:200000, star:50000, normal:24000, upgrade:34000},
+    {flow:300000, normal:37000, upgrade:52000},
+    {flow:500000, normal:65000, upgrade:88000},
+    {flow:1000000, normal:130000, upgrade:180000},
+];
 
-/* =========================
-   計畫
-========================= */
-const plans = {
-  star: {
-    name: "繁星計畫",
-    table: {
-      5000: 500,
-      10000: 1500,
-      15000: 2300,
-      25000: 4000,
-      45000: 7000,
-      65000: 11000,
-      85000: 15000,
-      100000: 20000,
-      150000: 35000,
-      200000: 50000
-    }
-  },
-
-  support_normal: {
-    name: "扶持計畫（普通版）",
-    table: {
-      10000: 1000,
-      15000: 1500,
-      25000: 2700,
-      45000: 5000,
-      65000: 7300,
-      85000: 9800,
-      100000: 12000,
-      150000: 18000,
-      200000: 24000,
-      300000: 37000,
-      500000: 65000
-    }
-  },
-
-  support_plus: {
-    name: "扶持計畫（升級版）",
-    table: {
-      10000: 1000,
-      15000: 1500,
-      25000: 2700,
-      45000: 6000,
-      65000: 9000,
-      85000: 12000,
-      100000: 15000,
-      150000: 25000,
-      200000: 34000,
-      300000: 52000,
-      500000: 88000
-    }
-  }
-};
-
-/* =========================
-   當前階
-========================= */
-function getCurrent(amount, table){
-  const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
-  let tier=0, bonus=0;
-
-  for(const k of keys){
-    if(amount >= k){
-      tier = k;
-      bonus = table[k];
-    }
-  }
-  return {tier, bonus};
+function getReward(item, plan){
+    if(plan === "star") return item.star || 0;
+    if(plan === "playone_normal") return item.normal || 0;
+    if(plan === "playone_upgrade") return item.upgrade || 0;
 }
 
-/* =========================
-   主計算（A + B）
-========================= */
-function calc(){
+function renderTable(){
 
-const amount = Number(document.getElementById("amount").value);
-const plan = plans[document.getElementById("plan").value];
-const table = plan.table;
+    const tbody = document.querySelector("#rewardTable tbody");
 
-if(!amount){
-  alert("請輸入流水");
-  return;
+    rewardData.forEach(item=>{
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.flow.toLocaleString()}</td>
+                <td>${(item.star || 0).toLocaleString()}</td>
+                <td>${(item.normal || 0).toLocaleString()}</td>
+                <td>${(item.upgrade || 0).toLocaleString()}</td>
+            </tr>
+        `;
+    });
 }
 
-const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);
+renderTable();
 
-const {tier:curTier, bonus:curBonus} = getCurrent(amount, table);
+function calculate(){
 
-/* =========================
-   A模型（全域最優）
-========================= */
-let bestA = null;
+    const plan = document.getElementById("plan").value;
+    const currentFlow = Number(document.getElementById("currentFlow").value);
 
-/* =========================
-   B模型（增量決策）
-========================= */
-let bestB = null;
+    let currentReward = 0;
+    let nextTarget = null;
+    let nextReward = 0;
 
-for(const k of keys){
+    for(let i=0;i<rewardData.length;i++){
 
-  if(k <= amount) continue;
+        const reward = getReward(rewardData[i],plan);
 
-  const gap = k - amount;
-  const cost = gap * COST_RATE;
-  const revenue = gap * REVENUE_RATE;
-  const bonus = table[k];
+        if(currentFlow >= rewardData[i].flow && reward > 0){
+            currentReward = reward;
+        }
 
-  const net = (bonus - curBonus) + revenue - cost;
+        if(currentFlow < rewardData[i].flow && reward > 0){
+            nextTarget = rewardData[i].flow;
+            nextReward = reward;
+            break;
+        }
+    }
 
-  /* A模型：純最大值 */
-  if(!bestA || net > bestA.net){
-    bestA = {k, gap, cost, bonus, net};
-  }
+    if(nextTarget === null){
+        document.getElementById("result").innerHTML = `
+            <div class="good">
+                你已達最高階獎勵 🎉
+            </div>
+        `;
+        return;
+    }
 
-  /* B模型：只看「這一步」合理性 */
-  const incremental = (bonus - curBonus) - cost;
+    const gap = nextTarget - currentFlow;
 
-  if(!bestB || incremental > bestB.incremental){
-    bestB = {
-      k,
-      gap,
-      cost,
-      bonus,
-      incremental
-    };
-  }
-}
+    // 公式
+    const extraBonus = nextReward - currentReward;
 
-/* =========================
-   UI
-========================= */
-document.getElementById("result").innerHTML = `
+    // 實際虧損率
+    const realCostRate = 0.7 - 0.4;
 
-<div class="card">
-<h2>🧠 A模型（全域最優）</h2>
+    const estimatedCost = gap * realCostRate;
 
-<p>最佳補到：
-<b>${bestA.k.toLocaleString()}</b></p>
+    const netProfit = extraBonus - estimatedCost;
 
-<p>預估總淨收益：
-<span class="${bestA.net>0?'green':'red'}">
-${bestA.net.toFixed(0)}
-</span></p>
-</div>
+    let worthText = "";
+    let worthClass = "";
 
-<div class="card">
-<h2>🎯 B模型（增量決策）</h2>
+    if(netProfit > 0){
+        worthText = "值得拼下一階 ✅";
+        worthClass = "good";
+    }else{
+        worthText = "不划算 ❌";
+        worthClass = "bad";
+    }
 
-<p>建議補到：
-<b>${bestB.k.toLocaleString()}</b></p>
+    document.getElementById("result").innerHTML = `
+        <hr>
 
-<p>這一步淨收益：
-<span class="${bestB.incremental>0?'green':'red'}">
-${bestB.incremental.toFixed(0)}
-</span></p>
-</div>
+        <div>目前獎金：${currentReward.toLocaleString()}</div>
 
-<details class="card">
-<summary>▼ 詳細計算</summary>
+        <div>下一階流水：${nextTarget.toLocaleString()}</div>
 
-<pre>
-目前流水：${amount.toLocaleString()}
-目前階梯：${curTier}
-目前獎金：${curBonus}
+        <div>下一階獎金：${nextReward.toLocaleString()}</div>
 
-----------------------
+        <div>還差流水：${gap.toLocaleString()}</div>
 
-【A模型】
-補到 ${bestA.k}
-總淨收益 ${bestA.net.toFixed(0)}
+        <div>額外可多拿：${extraBonus.toLocaleString()}</div>
 
-----------------------
+        <div>補流水實際成本：
+            ${estimatedCost.toFixed(0)}
+        </div>
 
-【B模型】
-補到 ${bestB.k}
-增量收益 ${bestB.incremental.toFixed(0)}
+        <div>
+            預估淨收益：
+            <b>${netProfit.toFixed(0)}</b>
+        </div>
 
-----------------------
-
-公式：
-
-A模型 =
-(最終獎金 + 流水收益 - 成本)
-
-B模型 =
-(新增獎金 - 成本)
-</pre>
-
-</details>
-
-`;
-
+        <div class="${worthClass}">
+            ${worthText}
+        </div>
+    `;
 }
 
 </script>
